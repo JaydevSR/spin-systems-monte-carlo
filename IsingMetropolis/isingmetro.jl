@@ -98,7 +98,7 @@ end
 Perform simulation
 =#
 
-N = 10  # Lattice size
+N = 20  # Lattice size
 
 # Initialize lattice
 spins = ones(N, N)  # T = 0
