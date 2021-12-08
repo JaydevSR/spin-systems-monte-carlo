@@ -101,8 +101,8 @@ Perform simulation
 N = 10  # Lattice size
 
 # Initialize lattice
-# spins = ones(N, N)  # T = 0
-spins = rand([-1, 1], (N, N))  # T = ∞
+spins = ones(N, N)  # T = 0
+# spins = rand([-1, 1], (N, N))  # T = ∞
 
 
 Temps = [i for i=1.0:0.1:3.6]
@@ -149,23 +149,29 @@ Plots
 scatter(Temps, u_T)
 xlabel!("temperature, T")
 ylabel!("internal energy, u")
+title!("Ising Model for Lattice Size $(N)")
 savefig("IsingMetropolis/plots/u_vs_T.png")
 
 scatter(Temps, m_T)
 xlabel!("temperature, T")
 ylabel!("magnetization, m")
+title!("Ising Model for Lattice Size $(N)")
 savefig("IsingMetropolis/plots/m_vs_T.png")
 
 scatter(Temps, c_T)
 xlabel!("temperature, T")
 ylabel!("specific heat, c")
+title!("Ising Model for Lattice Size $(N)")
 savefig("IsingMetropolis/plots/c_vs_T.png")
 
 scatter(Temps, χ_T)
 xlabel!("temperature, T")
 ylabel!("succeptibility, χ")
+title!("Ising Model for Lattice Size $(N)")
 savefig("IsingMetropolis/plots/x_vs_T.png")
 
+
+# Equilibration for some T
 
 # T = 2.0
 # energies = Float32[total_energy(spins)]
