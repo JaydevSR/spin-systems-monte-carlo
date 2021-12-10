@@ -93,6 +93,30 @@ function total_energy(spins)
     return -running_sum / 2  # divide by 2 because each bond counted twice
 end
 
+"""
+    autocorrelation_fn(mags, N)
+
+Calculate the autocorrelation function (normalized) of the given time series array.
+"""
+function autocorrelation_fn(series, N)
+    tmax = length(series)
+    autocorr = zeros(Float32, tmax)
+    for t ∈ 1:tmax-1
+        sum1 = 0
+        sum2 = 0
+        sum3 = 0
+        for tk ∈ 1:tmax-t
+            sum1 += series[tk]*series[tk+t]
+            sum2 += series[tk]
+            sum3 += series[tk+t]
+        end
+        autocorr[t] = sum1 / (tmax-t) - (sum2*sum3) / (tmax - t)^2
+    end
+    @. autocorr /= N^2
+    @. autocorr /= autocorr[1]
+    return autocorr
+end
+
 
 #=
 Perform simulation
