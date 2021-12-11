@@ -4,6 +4,7 @@ The Hamiltonian has B=0 and J=1. Also, k=1 => β = 1/T.
 =#
 
 using Plots
+using Statistics
 
 
 """
@@ -93,6 +94,7 @@ function total_energy(spins)
     return -running_sum / 2  # divide by 2 because each bond counted twice
 end
 
+
 """
     autocorrelation_fn(mags, N)
 
@@ -118,6 +120,43 @@ function autocorrelation_fn(series, N)
 end
 
 
+"""
+    bootstrap_err(samples, calc_qty; r=100)
+
+Estimate the error in the given samples by bootstrap method. `calc_qty` is the function to calculate the quantity in which error has to be calculated. `r` is a keyword arguments giving number of resamples.
+"""
+function bootstrap_err(samples, calc_qty, args...; r=100)
+    nob = length(samples)
+    resample_arr = zeros(Float32, nob)
+    for i=1:r
+        resample = rand(samples, nob)
+        resample_arr[i] = calc_qty(resample, args...)
+    end
+    err = std(resample_arr, corrected=false)
+    return err
+end
+
+
+"""
+    specific_heat(u_vals, T, N)
+
+Calculate the specific heat from given array of internal energy per site (`N²` sites) at temperature `T`.
+"""
+function specific_heat(u_vals, T, N)
+    return (T^-2) * N^2 * var(u_vals, corrected=false)
+end
+
+
+"""
+    succeptibility(m_vals, T, N)
+
+Calculate the succeptibility from given array of mean magnetization per site (`N²` sites) at temperature `T`.
+"""
+function succeptibility(m_vals, T, N)
+    return (T^-2) * N^2 * var(m_vals, corrected=false)
+end
+
+
 #=
 Perform simulation
 =#
@@ -133,36 +172,51 @@ Temps = [i for i=1.0:0.1:3.6]
 eqsteps = 5000  # Number of steps for equilibration
 nsteps = 10000  # Number of steps for measurements
 
-u_T = zeros(Float32, length(Temps))  # Array of internal energy per site
+u_T = zeros(Float32, length(Temps))  # Array of mean internal energy per site
+err_u_T = zeros(Float32, length(Temps))
+
 m_T = zeros(Float32, length(Temps))  # Array of mean magnetization per site
+err_m_T = zeros(Float32, length(Temps))
+
 c_T = zeros(Float32, length(Temps))  # Array of specific heat
+err_c_T = zeros(Float32, length(Temps))
+
 χ_T = zeros(Float32, length(Temps))  # Array of succeptibility
+err_χ_T = zeros(Float32, length(Temps))
 
 for i=1:length(Temps)
     global spins
     T = Temps[i]
+
     E = total_energy(spins)
     M = total_magnetization(spins)
-    E_sum = M_sum = E_sq_sum = M_sq_sum = 0
 
     # Let the system reach equilibrium
     for step=1:eqsteps
         E, M = ising_metropolis_sweep!(spins, T, E, M)
     end
 
+    u_arr = zeros(Float32, nsteps)
+    m_arr = zeros(Float32, nsteps)
+
     # Iterate for calculating averages
     for step=1:nsteps
         E, M = ising_metropolis_sweep!(spins, T, E, M)
-        E_sum += E
-        M_sum += M
-        E_sq_sum += E*E
-        M_sq_sum += M*M
+        u_arr[step] = E / N^2
+        m_arr[step] = M / N^2
     end
 
-    u_T[i] = ( E_sum / (nsteps*N*N) )
-    m_T[i] = ( M_sum / (nsteps*N*N) )
-    c_T[i] = (T^-2) * ( E_sq_sum / (nsteps*N*N) - E_sum*E_sum / (nsteps*nsteps*N*N) )
-    χ_T[i] = (T^-1) * ( M_sq_sum / (nsteps*N*N) - M_sum*M_sum / (nsteps*nsteps*N*N) )
+    u_T[i] = mean(u_arr)
+    err_u_T[i] = bootstrap_err(u_arr, mean)
+
+    m_T[i] = mean(m_arr)
+    err_m_T[i] = bootstrap_err(m_arr, mean)
+
+    c_T[i] = specific_heat(u_arr, T, N)
+    err_c_T[i] = bootstrap_err(u_arr, specific_heat, T, N)
+
+    χ_T[i] = succeptibility(m_arr, T, N)
+    err_χ_T[i] = bootstrap_err(m_arr, succeptibility, T, N)
 end
 
 
@@ -170,29 +224,29 @@ end
 Plots
 =#
 
-scatter(Temps, u_T)
+scatter(Temps, u_T, yerr=u=err_u_T)
 xlabel!("temperature, T")
 ylabel!("internal energy, u")
 title!("Ising Model for Lattice Size $(N)")
-savefig("IsingMetropolis/plots/u_vs_T.png")
+savefig("IsingMetropolis/plots/u_vs_T_$(N).png")
 
-scatter(Temps, m_T)
+scatter(Temps, m_T, yerr=err_m_T)
 xlabel!("temperature, T")
 ylabel!("magnetization, m")
 title!("Ising Model for Lattice Size $(N)")
-savefig("IsingMetropolis/plots/m_vs_T.png")
+savefig("IsingMetropolis/plots/m_vs_T_$(N).png")
 
-scatter(Temps, c_T)
+scatter(Temps, c_T, yerr=err_c_T)
 xlabel!("temperature, T")
 ylabel!("specific heat, c")
 title!("Ising Model for Lattice Size $(N)")
-savefig("IsingMetropolis/plots/c_vs_T.png")
+savefig("IsingMetropolis/plots/c_vs_T_$(N).png")
 
-scatter(Temps, χ_T)
+scatter(Temps, χ_T, yerr=err_χ_T)
 xlabel!("temperature, T")
 ylabel!("succeptibility, χ")
 title!("Ising Model for Lattice Size $(N)")
-savefig("IsingMetropolis/plots/x_vs_T.png")
+savefig("IsingMetropolis/plots/x_vs_T_$(N).png")
 
 
 # Equilibration for some T
