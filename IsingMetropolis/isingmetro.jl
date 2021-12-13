@@ -102,7 +102,7 @@ Calculate the autocorrelation function (normalized) of the given time series arr
 """
 function autocorrelation_fn(series, N)
     tmax = length(series)
-    autocorr = zeros(Float32, tmax)
+    autocorr = zeros(Float64, tmax)
     for t ∈ 1:tmax-1
         sum1 = 0
         sum2 = 0
@@ -123,16 +123,37 @@ end
 """
     bootstrap_err(samples, calc_qty; r=100)
 
-Estimate the error in the given samples by bootstrap method. `calc_qty` is the function to calculate the quantity in which error has to be calculated. `r` is a keyword arguments giving number of resamples.
+Estimate the error in the given samples by bootstrap method.
+Here, `calc_qty` is the function to calculate the quantity in which error has to be calculated.
+And, `r` is a keyword arguments giving number of resamples.
 """
 function bootstrap_err(samples, calc_qty, args...; r=100)
     nob = length(samples)
-    resample_arr = zeros(Float32, nob)
+    resample_arr = zeros(Float64, nob)
     for i=1:r
         resample = rand(samples, nob)
         resample_arr[i] = calc_qty(resample, args...)
     end
     err = std(resample_arr, corrected=false)
+    return err
+end
+
+
+"""
+    blocking_err(samples, calc_qty; blocks=10)
+
+Estimate the error in the given samples by blocking method.
+Here, `calc_qty` is the function to calculate the quantity in which error has to be calculated.
+And, `blocks` is a keyword arguments giving number of blocks.
+"""
+function blocking_err(samples, calc_qty, args...; blocks=20)
+    block_array = zeros(Float64, blocks)
+    blocklength = length(samples) ÷ blocks
+    for i=1:blocks
+        sample_block = samples[(i-1)*blocklength + 1 : i*blocklength]
+        block_array[i] = calc_qty(sample_block, args...)
+    end
+    err = std(block_array)
     return err
 end
 
@@ -169,20 +190,20 @@ spins = ones(N, N)  # T = 0
 
 
 Temps = [i for i=1.0:0.1:3.6]
-eqsteps = 5000  # Number of steps for equilibration
-nsteps = 10000  # Number of steps for measurements
+eqsteps = 2000  # Number of steps for equilibration
+nsteps = 6000  # Number of steps for measurements
 
-u_T = zeros(Float32, length(Temps))  # Array of mean internal energy per site
-err_u_T = zeros(Float32, length(Temps))
+u_T = zeros(Float64, length(Temps))  # Array of mean internal energy per site
+err_u_T = zeros(Float64, length(Temps))
 
-m_T = zeros(Float32, length(Temps))  # Array of mean magnetization per site
-err_m_T = zeros(Float32, length(Temps))
+m_T = zeros(Float64, length(Temps))  # Array of mean magnetization per site
+err_m_T = zeros(Float64, length(Temps))
 
-c_T = zeros(Float32, length(Temps))  # Array of specific heat
-err_c_T = zeros(Float32, length(Temps))
+c_T = zeros(Float64, length(Temps))  # Array of specific heat
+err_c_T = zeros(Float64, length(Temps))
 
-χ_T = zeros(Float32, length(Temps))  # Array of succeptibility
-err_χ_T = zeros(Float32, length(Temps))
+χ_T = zeros(Float64, length(Temps))  # Array of succeptibility
+err_χ_T = zeros(Float64, length(Temps))
 
 for i=1:length(Temps)
     global spins
@@ -196,8 +217,8 @@ for i=1:length(Temps)
         E, M = ising_metropolis_sweep!(spins, T, E, M)
     end
 
-    u_arr = zeros(Float32, nsteps)
-    m_arr = zeros(Float32, nsteps)
+    u_arr = zeros(Float64, nsteps)
+    m_arr = zeros(Float64, nsteps)
 
     # Iterate for calculating averages
     for step=1:nsteps
@@ -207,16 +228,16 @@ for i=1:length(Temps)
     end
 
     u_T[i] = mean(u_arr)
-    err_u_T[i] = bootstrap_err(u_arr, mean)
+    err_u_T[i] = blocking_err(u_arr, mean)
 
     m_T[i] = mean(m_arr)
-    err_m_T[i] = bootstrap_err(m_arr, mean)
+    err_m_T[i] = blocking_err(m_arr, mean)
 
     c_T[i] = specific_heat(u_arr, T, N)
-    err_c_T[i] = bootstrap_err(u_arr, specific_heat, T, N)
+    err_c_T[i] = blocking_err(u_arr, specific_heat, T, N)
 
     χ_T[i] = succeptibility(m_arr, T, N)
-    err_χ_T[i] = bootstrap_err(m_arr, succeptibility, T, N)
+    err_χ_T[i] = blocking_err(m_arr, succeptibility, T, N)
 end
 
 
@@ -252,8 +273,8 @@ savefig("IsingMetropolis/plots/x_vs_T_$(N).png")
 # Equilibration for some T
 
 # T = 2.0
-# energies = Float32[total_energy(spins)]
-# magnetizations = Float32[total_magnetization(spins)]
+# energies = Float64[total_energy(spins)]
+# magnetizations = Float64[total_magnetization(spins)]
 
 # for step=1:nsteps
 #     E, M = ising_metropolis_sweep!(spins, T, energies[step], magnetizations[step])
