@@ -199,20 +199,21 @@ for i=1:length(Temps)
     for step=1:nsteps-1
         ΔM = ising_wolff_step!(spins, P_add)
         u_arr[step+1] = total_energy(spins) / N^2
-        m_arr[step+1] = ΔM
+        m_arr[step+1] = ΔM / N^2
     end
 
+    m_arr = abs.(m_arr)
     u_T[i] = mean(u_arr)
     err_u_T[i] = blocking_err(u_arr, mean)
 
-    m_T[i] = mean(abs.(m_arr))
+    m_T[i] = mean(m_arr)
     err_m_T[i] = blocking_err(m_arr, mean)
 
     c_T[i] = specific_heat(u_arr, T, N)
     err_c_T[i] = blocking_err(u_arr, specific_heat, T, N)
 
-    χ_T[i] = succeptibility(abs.(m_arr), T, N)
-    err_χ_T[i] = blocking_err(abs.(m_arr), succeptibility, T, N)
+    χ_T[i] = succeptibility(m_arr, T, N)
+    err_χ_T[i] = blocking_err(m_arr, succeptibility, T, N)
 end
 
 
