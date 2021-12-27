@@ -221,7 +221,7 @@ end
 Plots
 =#
 
-scatter(Temps, u_T, yerr=u=err_u_T)
+scatter(Temps, u_T, yerr=err_u_T)
 xlabel!("temperature, T")
 ylabel!("internal energy, u")
 title!("Ising Model for Lattice Size $(N)")
