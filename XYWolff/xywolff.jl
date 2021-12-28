@@ -25,11 +25,11 @@ function cluster_update!(spins::Matrix, seed::AbstractArray, u_flip::Float64, T:
     flip_spin!(spins, seed, u_flip)
     while !isempty(stack)
         k = pop!(stack)
-        for δ ∈ ([1, 0], [N-1, 0], [0, 1], [0, N-1])
+        @inbounds for δ ∈ ([1, 0], [N-1, 0], [0, 1], [0, N-1])
             nn = k + δ
             @. nn = mod1(nn, N)  # Apply periodic boundary conditions
             nnval = spins[nn...]
-            if abs(sval - nnval) <= 0.25 && !cluster[nn...] && rand() < P_add(u_flip, nnval, sval, T)
+            if !cluster[nn...] && rand() < P_add(u_flip, nnval, sval, T)
                 push!(stack, nn)
                 cluster[nn...] = true
                 flip_spin!(spins, nn, u_flip)
@@ -44,7 +44,7 @@ end
 Calculate the probability of adding spin `s2` to cluster of as a neighbour of `s1` at temperature `T` w.r.t angle `u_flip`.
 """
 function P_add(u_flip::Float64, s1::Float64, s2::Float64, T::Float64)
-    arg = -2 * cos(u_flip - s1) * cos(u_flip - s2) / T
+    arg = - 2 * cos2pi(u_flip - s1) * cos2pi(u_flip - s2) / T
     return 1 - exp(arg)
 end
 
@@ -56,7 +56,7 @@ Flip the spin at position `pos` inside lattice `spins` w.r.t. angle `u_flip`.
 function flip_spin!(spins::Matrix, pos::AbstractArray, u_flip::Float64)
     old = spins[pos...]
     new = 0.5 + 2*u_flip - old  # flipping w.r.t vector with angle ϕ: θ --> π + 2ϕ - θ
-    new = mod(new, 1)
+    new = mod1(new, 1)
     spins[pos...] = new
     return old, spins[pos...]
 end
@@ -77,13 +77,13 @@ function simulate_xy_wolff(N::Int64, T::Float64, esteps::Int64, nsteps::Int64; f
         xy_wolff_step!(spins, N, T)
     end
 
-    u_arr = zeros(Float64, nsteps)
+    E_arr = zeros(Float64, nsteps)
     for i=1:nsteps
         xy_wolff_step!(spins, N, T)
-        u_arr[i] = total_energy(spins, N) / N^2
+        E_arr[i] = total_energy(spins, N)
     end
 
-    return u_arr
+    return E_arr
 end
 
 """
@@ -98,8 +98,8 @@ function plot_spins(spins::Matrix, N::Int64)
     vy = zeros(Float64, size(x))
     # rotation = zeros(Float64, size(x))
     @inbounds for i in eachindex(x, y)
-        vx[i] = cos(2*pi*spins[x[i], y[i]])
-        vy[i] = sin(2*pi*spins[x[i], y[i]])
+        vx[i] = cos2pi(spins[x[i], y[i]])
+        vy[i] = sin2pi(spins[x[i], y[i]])
         # rotation[i] = mod(abs(0.5 - spins[x[i], y[i]]), 1)
     end
     
@@ -123,7 +123,7 @@ function total_energy(spins::Matrix, N::Int64)
         for δ ∈ CartesianIndex.([(1, 0), (N-1, 0), (0, 1), (0, N-1)])
             nn = idx + δ
             nn = CartesianIndex(mod1.(Tuple(nn), N))  # Apply periodic boundary conditions
-            running_sum += cos(s_k-spins[nn])
+            running_sum += cos2pi(s_k-spins[nn])
         end
     end
     return -running_sum / 2  # divide by 2 because each bond counted twice
@@ -134,8 +134,26 @@ end
 
 Calculate the specific heat from given array of internal energy per site (`N²` sites) at temperature `T`.
 """
-function specific_heat(u_vals, T, N)
-    return (T^-2) * N^2 * var(u_vals, corrected=false)
+function specific_heat(E_vals, T, N)
+    return (mean(E_vals.^2) - mean(E_vals)^2) / (N*T)^2
+end
+
+"""
+    bootstrap_err(samples, calc_qty; r=100)
+
+Estimate the error in the given samples by bootstrap method.
+Here, `calc_qty` is the function to calculate the quantity in which error has to be calculated.
+And, `r` is a keyword arguments giving number of resamples.
+"""
+function bootstrap_err(samples, calc_qty, args...; r=100)
+    nob = length(samples)
+    resample_arr = zeros(Float64, nob)
+    for i=1:r
+        resample = rand(samples, nob)
+        resample_arr[i] = calc_qty(resample, args...)
+    end
+    err = std(resample_arr, corrected=false)
+    return err
 end
 
 """
@@ -156,13 +174,21 @@ function blocking_err(samples, calc_qty, args...; blocks=20)
     return err
 end
 
+function cos2pi(x)
+    return cos(2*pi*x)
+end
+
+function sin2pi(x)
+    return sin(2*pi*x)
+end
+
 # simulation
 
-N = 10
+N = 20
 
-Temps = [i for i=0.1:0.1:2.4]
-esteps = 2000  # Number of steps for equilibration
-nsteps = 4000  # Number of steps for measurements
+Temps = [i for i=0.1:0.2:4]
+esteps = 5000  # Number of steps for equilibration
+nsteps = 10000  # Number of steps for measurements
 
 u_T = zeros(Float64, length(Temps))  # Array of mean internal energy per site
 err_u_T = zeros(Float64, length(Temps))
@@ -174,13 +200,13 @@ for i=1:length(Temps)
     global spins
     T = Temps[i]
     
-    u_arr = simulate_xy_wolff(N, T, esteps, nsteps; from_infinity=true)
+    E_arr = simulate_xy_wolff(N, T, esteps, nsteps)
 
-    u_T[i] = mean(u_arr)
-    err_u_T[i] = blocking_err(u_arr, mean)
+    u_T[i] = mean(E_arr) / N^2
+    err_u_T[i] = blocking_err(E_arr, A -> mean(A) / N^2)
 
-    c_T[i] = specific_heat(u_arr, T, N)
-    err_c_T[i] = blocking_err(u_arr, specific_heat, T, N)
+    c_T[i] = specific_heat(E_arr, T, N)
+    err_c_T[i] = blocking_err(E_arr, specific_heat, T, N)
 end
 
 
@@ -195,9 +221,17 @@ ax1 = Axis(f[1, 1], xlabel = "temperature, T", ylabel = "internal energy, u",
 ax2 = Axis(f[1, 2], xlabel = "temperature, T", ylabel = "specific heat, c",
     title = "XY Model for Lattice Size $(N)")
 
-errorbars!(ax1, Temps, u_T, err_u_T)
-scatter!(ax1, Temps, u_T, yerr=err_u_T)
-errorbars!(ax2, Temps, c_T, err_c_T)
-scatter!(ax2, Temps, c_T, yerr=err_c_T)
+errorbars!(
+    ax1, Temps, u_T, err_u_T,
+    whiskerwidth = 10
+    )
+scatter!(
+    ax1, Temps, u_T,
+    markersize = 10
+    )
+errorbars!(
+    ax2, Temps, c_T, err_c_T,
+    whiskerwidth = 10)
+scatter!(ax2, Temps, c_T)
 
 save("XYWolff/plots/u&c_vs_T_$(N).png", f)
