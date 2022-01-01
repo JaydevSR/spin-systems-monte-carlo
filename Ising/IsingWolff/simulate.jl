@@ -1,3 +1,5 @@
+using Plots
+
 include("isingwolff.jl")
 
 #=

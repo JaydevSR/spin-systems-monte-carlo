@@ -3,7 +3,6 @@ Implementaion of the Metropolis algorithm for Monte-Carlo simulation of the Isin
 The Hamiltonian has B=0 and J=1. Also, k=1 => β = 1/T. 
 =#
 
-using Plots
 using Statistics
 
 

@@ -2,7 +2,7 @@
 Implementaion of the Wolff algorithm for Monte-Carlo simulation of the Ising model.
 The Hamiltonian has B=0 and J=1. Also, k=1 => β = 1/T. 
 =#
-using Plots, Statistics
+using Statistics
 
 function ising_wolff_step!(spins, P_add)
     N = size(spins)[1]

@@ -1,3 +1,5 @@
+using CairoMakie
+
 include("xywolff.jl")
 
 #=
