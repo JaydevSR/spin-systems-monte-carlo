@@ -74,25 +74,25 @@ scatter(Temps, u_T, yerr = err_u_T)
 xlabel!("temperature, T")
 ylabel!("internal energy, u")
 title!("Ising Model for Lattice Size $(N)")
-savefig("IsingWolff/plots/u_vs_T_$(N).png")
+savefig("Ising/IsingWolff/plots/u_vs_T_$(N).png")
 
 scatter(Temps, m_T, yerr = err_m_T)
 xlabel!("temperature, T")
 ylabel!("magnetization, m")
 title!("Ising Model for Lattice Size $(N)")
-savefig("IsingWolff/plots/m_vs_T_$(N).png")
+savefig("Ising/IsingWolff/plots/m_vs_T_$(N).png")
 
 scatter(Temps, c_T, yerr = err_c_T)
 xlabel!("temperature, T")
 ylabel!("specific heat, c")
 title!("Ising Model for Lattice Size $(N)")
-savefig("IsingWolff/plots/c_vs_T_$(N).png")
+savefig("Ising/IsingWolff/plots/c_vs_T_$(N).png")
 
 scatter(Temps, χ_T, yerr = err_χ_T)
 xlabel!("temperature, T")
 ylabel!("succeptibility, χ")
 title!("Ising Model for Lattice Size $(N)")
-savefig("IsingWolff/plots/x_vs_T_$(N).png")
+savefig("Ising/IsingWolff/plots/x_vs_T_$(N).png")
 
 
 # Equilibration for some T

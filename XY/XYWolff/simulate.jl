@@ -54,7 +54,7 @@ scatter!(
 #     whiskerwidth = 10)
 # scatter!(ax2, Temps, c_T)
 
-save("XYWolff/plots/internal_energy_vs_Temp_$(N).png", f)
+save("XY/XYWolff/plots/internal_energy_vs_Temp_$(N).png", f)
 
 # spins = rand(Float64, (N, N))
 # T = 2.0
