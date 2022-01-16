@@ -8,6 +8,10 @@ Perform simulation
 
 N = 20  # Lattice size
 
+println("================================\n")
+println("    Lattice Size: $(N) x $(N)")
+println("================================\n")
+
 # Initialize lattice
 spins = ones(N, N)  # T = 0
 # spins = rand([-1, 1], (N, N))  # T = ∞
@@ -15,7 +19,7 @@ spins = ones(N, N)  # T = 0
 
 Temps = [i for i = 1.0:0.1:3.6]
 eqsteps = 2000  # Number of steps for equilibration
-nsteps = 6000  # Number of steps for measurements
+nsteps = 10000  # Number of steps for measurements
 
 u_T = zeros(Float64, length(Temps))  # Array of mean internal energy per site
 err_u_T = zeros(Float64, length(Temps))
@@ -32,6 +36,7 @@ err_χ_T = zeros(Float64, length(Temps))
 for i = 1:length(Temps)
     global spins
     T = Temps[i]
+    println("Calculating for T = $(T) ...")
 
     E = total_energy(spins)
     M = total_magnetization(spins)
@@ -51,10 +56,11 @@ for i = 1:length(Temps)
         m_arr[step] = M / N^2
     end
 
+    m_arr = abs.(m_arr)
     u_T[i] = mean(u_arr)
     err_u_T[i] = blocking_err(u_arr, mean)
 
-    m_T[i] = mean(m_arr)
+    m_T[i] = mean(m_arr)  # As B=0
     err_m_T[i] = blocking_err(m_arr, mean)
 
     c_T[i] = specific_heat(u_arr, T, N)
@@ -62,13 +68,15 @@ for i = 1:length(Temps)
 
     χ_T[i] = succeptibility(m_arr, T, N)
     err_χ_T[i] = blocking_err(m_arr, succeptibility, T, N)
+    println("   |          ")
+    println("   +-> Done.\n")
 end
 
 
 #=
 Plots
 =#
-
+println("Generating Plots ...")
 scatter(Temps, u_T, yerr = u = err_u_T)
 xlabel!("temperature, T")
 ylabel!("internal energy, u")
@@ -108,3 +116,5 @@ savefig("Ising/IsingMetropolis/plots/x_vs_T_$(N).png")
 
 # p = plot(1:nsteps, energies[2:end] ./ N^2)
 # p = plot!(1:nsteps, magnetizations[2:end] ./ N^2)
+println("Program Finished!")
+println("===========================\n")

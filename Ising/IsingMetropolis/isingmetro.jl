@@ -68,7 +68,7 @@ end
 Calculate the total magnetization of square spin lattice.
 """
 function total_magnetization(spins)
-    return sum(sum(spins))
+    return sum(spins)
 end
 
 
@@ -139,7 +139,7 @@ end
 
 
 """
-    blocking_err(samples, calc_qty; blocks=10)
+    blocking_err(samples, calc_qty; blocks=20)
 
 Estimate the error in the given samples by blocking method.
 Here, `calc_qty` is the function to calculate the quantity in which error has to be calculated.

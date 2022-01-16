@@ -7,6 +7,9 @@ Perform simulation
 =#
 
 N = 10  # Lattice size
+println("================================\n")
+println("    Lattice Size: $(N) x $(N)")
+println("================================\n")
 
 # Initialize lattice
 spins = ones(N, N)  # T = 0
@@ -32,6 +35,8 @@ err_χ_T = zeros(Float64, length(Temps))
 for i = 1:length(Temps)
     global spins
     T = Temps[i]
+    println("Calculating for T = $(T) ...")
+
     P_add = 1 - exp(-2 / T)
 
     # Let the system reach equilibrium
@@ -50,7 +55,7 @@ for i = 1:length(Temps)
     for step = 1:nsteps-1
         ΔM = ising_wolff_step!(spins, P_add)
         u_arr[step+1] = total_energy(spins) / N^2
-        m_arr[step+1] = ΔM / N^2
+        m_arr[step+1] = total_magnetization(spins) / N^2
     end
 
     m_arr = abs.(m_arr)
@@ -65,6 +70,8 @@ for i = 1:length(Temps)
 
     χ_T[i] = succeptibility(m_arr, T, N)
     err_χ_T[i] = blocking_err(m_arr, succeptibility, T, N)
+    println("   |          ")
+    println("   +-> Done.\n")
 end
 
 
@@ -72,6 +79,7 @@ end
 Plots
 =#
 
+println("Generating Plots ...")
 scatter(Temps, u_T, yerr = err_u_T)
 xlabel!("temperature, T")
 ylabel!("internal energy, u")
@@ -111,3 +119,5 @@ savefig("Ising/IsingWolff/plots/x_vs_T_$(N).png")
 
 # p = plot(1:nsteps, energies[2:end] ./ N^2)
 # p = plot!(1:nsteps, magnetizations[2:end] ./ N^2)
+println("Program Finished!")
+println("===========================\n")

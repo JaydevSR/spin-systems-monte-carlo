@@ -42,7 +42,7 @@ end
 Calculate the total magnetization of square spin lattice.
 """
 function total_magnetization(spins)
-    return sum(sum(spins))
+    return abs(sum(spins))  # As B=0
 end
 
 
