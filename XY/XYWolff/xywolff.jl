@@ -30,7 +30,7 @@ function cluster_update!(spins::Matrix, seed::AbstractArray, u_flip::Float64, T:
             nn = k + δ
             @. nn = mod1(nn, N)  # Apply periodic boundary conditions
             nnval = spins[nn...]
-            if !cluster[nn...] && rand() < P_add(u_flip, nnval, sval, T)
+            if isparallel(nnval, sval) && !cluster[nn...] && rand() < P_add(u_flip, nnval, sval, T)
                 push!(stack, nn)
                 cluster[nn...] = true
                 flip_spin!(spins, nn, u_flip)
@@ -62,6 +62,14 @@ function flip_spin!(spins::Matrix, pos::AbstractArray, u_flip::Float64)
     return old, spins[pos...]
 end
 
+function isparallel(s1, s2)
+    tht1, tht2 = 2pi*s1, 2pi*s2
+    if cos(tht1 - tht2) > 0
+        return true
+    end
+    return false
+end
+
 """
     simulate_xy_wolff(N::Int64, T::Float64, esteps::Inf64, nsteps::Int64; from_infinity=false)
 
@@ -69,9 +77,9 @@ Simulate the XY model for a `(N, N)` lattice at temperature `T` with `eqsteps` n
 """
 function simulate_xy_wolff(N::Int64, T::Float64, esteps::Int64, nsteps::Int64; from_infinity = false)
     if from_infinity
-        spins = rand(Float64, (N, N))
+        spins = rand(0.0:0.1:1.0, (N, N))
     else
-        spins = zeros(Float64, (N, N))
+        spins = fill(0.0, (N, N))
     end
 
     for i = 1:esteps

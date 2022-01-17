@@ -6,14 +6,14 @@ include("xywolff.jl")
 Perform simulation
 =#
 
-N = 10
+N = 30
 println("================================\n")
 println("    Lattice Size: $(N) x $(N)")
 println("================================\n")
 
-Temps = [i for i = 0.1:0.2:2.9]
+Temps = [i for i = 0.1:0.1:4]
 esteps = 5000  # Number of steps for equilibration
-nsteps = 50000  # Number of steps for measurements
+nsteps = 20000  # Number of steps for measurements
 
 u_T = zeros(Float64, length(Temps))  # Array of mean internal energy per site
 err_u_T = zeros(Float64, length(Temps))
@@ -26,7 +26,7 @@ for i = 1:length(Temps)
     T = Temps[i]
     println("Calculating for T = $(T) ...")
 
-    E_arr = simulate_xy_wolff(N, T, esteps, nsteps)
+    E_arr = simulate_xy_wolff(N, T, esteps, nsteps, from_infinity = false)
 
     u_T[i] = mean(E_arr) / N^2
     err_u_T[i] = blocking_err(E_arr, A -> mean(A) / N^2)
@@ -56,7 +56,7 @@ errorbars!(
 )
 scatter!(
     ax1, Temps, u_T,
-    markersize = 10
+    markersize = 7
 )
 
 errorbars!(
@@ -64,7 +64,7 @@ errorbars!(
     whiskerwidth = 10)
 scatter!(
     ax2, Temps, c_T,
-    markersize=10
+    markersize = 7
 )
 
 save("XY/XYWolff/plots/u&c_vs_T_$(N).png", f)
