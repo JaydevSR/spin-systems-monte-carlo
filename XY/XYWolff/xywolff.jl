@@ -26,11 +26,12 @@ function cluster_update!(spins::Matrix, seed::AbstractArray, u_flip::Float64, T:
     flip_spin!(spins, seed, u_flip)
     while !isempty(stack)
         k = pop!(stack)
+        kval = spins[k...]
         @inbounds for δ ∈ ([1, 0], [N - 1, 0], [0, 1], [0, N - 1])
             nn = k + δ
             @. nn = mod1(nn, N)  # Apply periodic boundary conditions
             nnval = spins[nn...]
-            if isparallel(nnval, sval) && !cluster[nn...] && rand() < P_add(u_flip, nnval, sval, T)
+            if !cluster[nn...] && rand() < P_add(u_flip, nnval, kval, T)
                 push!(stack, nn)
                 cluster[nn...] = true
                 flip_spin!(spins, nn, u_flip)
@@ -135,7 +136,7 @@ function total_energy(spins::Matrix, N::Int64)
             running_sum += cos2pi(s_k - spins[nn])
         end
     end
-    return -running_sum / 2  # divide by 2 because each bond counted twice
+    return running_sum / 2  # divide by 2 because each bond counted twice
 end
 
 """
