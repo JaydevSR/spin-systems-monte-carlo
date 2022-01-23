@@ -34,14 +34,14 @@ for step = 1:nsteps
         println("Step: $(step)/$(nsteps) ...")
     end
     E, M = isingmetro_step!(spins, T, E, M)
-    if step%100 == 0
+    if step%50 == 0
         ss_corrs = ss_corrs .+ ss_correlation_fn(spins, N)
         nsamples += 1
     end
 end
 
 ss_corrs = ss_corrs ./ nsamples
-ss_corrs = (ss_corrs[1:end] .+ ss_corrs[end:-1:1]) ./ 2
+ss_corrs[2:end] = (ss_corrs[2:end] .+ ss_corrs[end:-1:2]) ./ 2
 
 
 #=
@@ -51,11 +51,11 @@ println("Generating Plots ...")
 f = Figure()
 
 ax1 = Axis(f[1, 1], xlabel = "r = |i-j|", ylabel = "<s_i * s_j>",
-    title = "Spin-spin correlation function (Lattice Size $(N), T=$(T)")
+    title = "Spin-spin correlation function (Lattice Size $(N), T=$(T))")
 
-lines!(ax1, 0:N-1, ss_corrs[1:N])
+lines!(ax1, 0:N÷2-1, ss_corrs[1:N÷2])
 scatter!(
-    ax1, 0:N-1, ss_corrs[1:N],
+    ax1, 0:N÷2-1, ss_corrs[1:N÷2],
     markersize = 10
 )
 

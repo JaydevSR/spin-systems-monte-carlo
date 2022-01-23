@@ -14,12 +14,12 @@ end
 
 Build a cluster among `spins` starting at `seed` at temperature `T`. Flip the cluster w.r.t angle `u_flip`.
 """
-function xy_wolff_cluster_update!(spins::Matrix, seed::AbstractArray, u_flip::Float64, T::Float64)
+function xywolff_cluster_update!(spins::Matrix, seed::AbstractArray, u_flip::Float64, T::Float64)
     cluster = falses(size(spins))
     sval = spins[seed...]
     stack = [seed]
     cluster[seed...] = true
-    flip_spin!(spins, seed, u_flip)
+    xywolff_flip_spin!(spins, seed, u_flip)
     while !isempty(stack)
         k = pop!(stack)
         kval = spins[k...]
@@ -27,7 +27,7 @@ function xy_wolff_cluster_update!(spins::Matrix, seed::AbstractArray, u_flip::Fl
             nn = k + δ
             @. nn = mod1(nn, N)  # Apply periodic boundary conditions
             nnval = spins[nn...]
-            if isparallel(kval, nnval) && !cluster[nn...] && rand() < P_add(u_flip, nnval, kval, T)
+            if !cluster[nn...] && rand() < xywolff_Padd(u_flip, nnval, kval, T)
                 push!(stack, nn)
                 cluster[nn...] = true
                 xywolff_flip_spin!(spins, nn, u_flip)
@@ -50,7 +50,7 @@ function xywolff_flip_spin!(spins::Matrix, pos::AbstractArray, u_flip::Float64)
 end
 
 """
-    P_add(u_flip::Float64, s1::Float64, s2::Float64, T::Float64; J=1)
+    xywolff_Padd(u_flip::Float64, s1::Float64, s2::Float64, T::Float64; J=1)
 
 Calculate the probability of adding spin `s2` to cluster of as a neighbour of `s1` at temperature `T` w.r.t angle `u_flip`. The interaction energy defaults to `1`.
 """
@@ -78,4 +78,8 @@ end
 
 function sin2pi(x::Float64)
     return sin(2 * pi * x)
+end
+
+function xy_spindot(s1, s2)
+    return cos2pi(s1-s2)
 end
