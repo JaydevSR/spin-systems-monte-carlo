@@ -9,10 +9,10 @@ println("================================\n")
 println("    Lattice Size: $(N) x $(N)")
 println("================================\n")
 
-esteps = 2000  # Number of steps for equilibration
+esteps = 1000  # Number of steps for equilibration
 nsteps = 10000  # Number of steps for measurements
 
-T = 1.5
+T = 0.4
 println("Calculating spin-spin correlation function for T = $(T) ...")
 ss_corrs = zeros(Float64, N)
 nsamples = 0
@@ -36,7 +36,7 @@ for step = 1:nsteps
 end
 
 ss_corrs = ss_corrs ./ nsamples
-ss_corrs = (ss_corrs[1:end] .+ ss_corrs[end:-1:1]) ./ 2
+# @. ss_corrs[2:end] = (ss_corrs[2:end] + ss_corrs[end:-1:2]) / 2
 
 #=
 Plots
@@ -45,12 +45,25 @@ println("Generating Plots ...")
 f = Figure()
 
 ax1 = Axis(f[1, 1], xlabel = "r = |i-j|", ylabel = "<s_i * s_j>",
-    title = "Spin-spin correlation function (Lattice Size $(N), T=$(T)")
+    yminorticksvisible = true, yminorgridvisible = true,
+    title = "Spin-spin correlation function (Lattice Size $(N), T=$(T))"
+)
 
-lines!(ax1, 0:N-1, ss_corrs[1:N])
+ax2 = Axis(f[2, 1], xlabel = "r = |i-j|", ylabel = "ln(<s_i * s_j>)",
+    yscale=log, yminorticksvisible = true, yminorgridvisible = true,
+    title = "Spin-spin correlation function (log scale)"
+)
+
+lines!(ax1, 0:N÷2-1, ss_corrs[1:N÷2])
 scatter!(
-    ax1, 0:N-1, ss_corrs[1:N],
-    markersize = 10
+        ax1, 0:N÷2-1, ss_corrs[1:N÷2],
+        markersize = 7
+)
+
+lines!(ax2, 0:N÷2-1, ss_corrs[1:N÷2])
+scatter!(
+    ax2, 0:N÷2-1, ss_corrs[1:N÷2],
+    markersize = 7
 )
 
 save("simulations/results/xy/ss_corr_N$(N)_Temp($(T)).png", f)
