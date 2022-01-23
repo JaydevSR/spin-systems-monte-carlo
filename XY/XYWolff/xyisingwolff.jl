@@ -56,8 +56,8 @@ end
 function compose_ising_to_XY(ising_pll, ising_prp, len_pll, len_prp, u_flip)
     along_u = ising_pll .* len_pll
     normal_u = ising_prp .* len_prp
-    x = along_u .* cos2pi(u_flip) - normal_u .* sin2pi(u_flip)
-    y = along_u .* sin2pi(u_flip) + normal_u .* cos2pi(u_flip)
+    x = along_u .* cos2pi(u_flip) .- normal_u .* sin2pi(u_flip)
+    y = along_u .* sin2pi(u_flip) .+ normal_u .* cos2pi(u_flip)
     XYlattice = mod1.(atan.(y, x) ./ (2pi), 1)
     return XYlattice
 end

@@ -23,10 +23,10 @@ function cluster_update!(spins::Matrix, seed::AbstractArray, u_flip::Float64, T:
     sval = spins[seed...]
     stack = [seed]
     cluster[seed...] = true
-    flip_spin!(spins, seed, u_flip)
     while !isempty(stack)
         k = pop!(stack)
         kval = spins[k...]
+        flip_spin!(spins, k, u_flip)
         @inbounds for δ ∈ ([1, 0], [N - 1, 0], [0, 1], [0, N - 1])
             nn = k + δ
             @. nn = mod1(nn, N)  # Apply periodic boundary conditions
@@ -34,7 +34,6 @@ function cluster_update!(spins::Matrix, seed::AbstractArray, u_flip::Float64, T:
             if isparallel(kval, nnval) && !cluster[nn...] && rand() < P_add(u_flip, nnval, kval, T)
                 push!(stack, nn)
                 cluster[nn...] = true
-                flip_spin!(spins, nn, u_flip)
             end
         end
     end

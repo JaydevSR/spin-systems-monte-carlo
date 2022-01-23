@@ -19,10 +19,10 @@ function xywolff_cluster_update!(spins::Matrix, seed::AbstractArray, u_flip::Flo
     sval = spins[seed...]
     stack = [seed]
     cluster[seed...] = true
-    xywolff_flip_spin!(spins, seed, u_flip)
     while !isempty(stack)
         k = pop!(stack)
         kval = spins[k...]
+        xywolff_flip_spin2!(spins, k, u_flip)
         @inbounds for δ ∈ ([1, 0], [N - 1, 0], [0, 1], [0, N - 1])
             nn = k + δ
             @. nn = mod1(nn, N)  # Apply periodic boundary conditions
@@ -30,7 +30,6 @@ function xywolff_cluster_update!(spins::Matrix, seed::AbstractArray, u_flip::Flo
             if !cluster[nn...] && rand() < xywolff_Padd(u_flip, nnval, kval, T)
                 push!(stack, nn)
                 cluster[nn...] = true
-                xywolff_flip_spin!(spins, nn, u_flip)
             end
         end
     end
@@ -44,8 +43,19 @@ Flip the spin at position `pos` inside lattice `spins` w.r.t. angle `u_flip`.
 function xywolff_flip_spin!(spins::Matrix, pos::AbstractArray, u_flip::Float64)
     old = spins[pos...]
     new = 0.5 + 2 * u_flip - old  # flipping w.r.t vector with angle ϕ: θ --> π + 2ϕ - θ
-    new = mod1(new, 1)
+    new = mod(new + 1, 1)
     spins[pos...] = new
+    return old, spins[pos...]
+end
+
+function xywolff_flip_spin2!(spins::Matrix, pos::AbstractArray, u_flip::Float64)
+    old = spins[pos...]
+    along_u = cos2pi.(old - u_flip)
+    normal_u = sin2pi.(old - u_flip)
+    along_u *= -1
+    x = along_u * cos2pi(u_flip) - normal_u * sin2pi(u_flip)
+    y = along_u * sin2pi(u_flip) + normal_u * cos2pi(u_flip)
+    spins[pos...] = mod1(atan(y, x) / (2pi), 1)
     return old, spins[pos...]
 end
 
