@@ -1,6 +1,4 @@
-using CairoMakie
-
-include("xywolff.jl")
+include("../src/spinmc.jl")
 
 #=
 Perform simulation
@@ -13,7 +11,7 @@ println("================================\n")
 
 Temps = append!([i for i = 0.1:0.1:0.7], [i for i = 0.8:0.05:1.4], [i for i = 1.5:0.1:2.5])
 esteps = 2000  # Number of steps for equilibration
-nsteps = 30000  # Number of steps for measurements
+nsteps = 20000  # Number of steps for measurements
 
 u_T = zeros(Float64, length(Temps))  # Array of mean internal energy per site
 err_u_T = zeros(Float64, length(Temps))
@@ -26,13 +24,13 @@ for i = 1:length(Temps)
     T = Temps[i]
     println("Calculating for T = $(T) ...")
 
-    E_arr = simulate_xy_wolff(N, T, esteps, nsteps, from_infinity = false)
+    u_arr = simulate_xy_wolff(N, T, esteps, nsteps, from_infinity = false) ./ N^2
 
-    u_T[i] = mean(E_arr) / N^2
-    err_u_T[i] = blocking_err(E_arr, A -> mean(A) / N^2)
+    u_T[i] = mean(u_arr) 
+    err_u_T[i] = blocking_err(u_arr, A -> mean(A))
 
-    c_T[i] = specific_heat(E_arr, T, N)
-    err_c_T[i] = blocking_err(E_arr, specific_heat, T, N)
+    c_T[i] = specific_heat(u_arr, T, N)
+    err_c_T[i] = blocking_err(u_arr, specific_heat, T, N)
     println("   |          ")
     println("   +-> Done.\n")
 end
@@ -45,10 +43,10 @@ println("Generating Plots ...")
 f = Figure()
 
 ax1 = Axis(f[1, 1], xlabel = "temperature, T", ylabel = "internal energy, u",
-    title = "XY Model for Lattice Size $(N)")
+    title = "XY $(N)x$(N): Internal energy (per site) v/s temperature")
 
-ax2 = Axis(f[1, 2], xlabel = "temperature, T", ylabel = "specific heat, c",
-    title = "XY Model for Lattice Size $(N)")
+ax2 = Axis(f[2, 1], xlabel = "temperature, T", ylabel = "specific heat, c",
+    title = "XY $(N)x$(N): Specific heat (per site) v/s temperature")
 
 errorbars!(
     ax1, Temps, u_T, err_u_T,
@@ -67,17 +65,7 @@ scatter!(
     markersize = 7
 )
 
-save("XY/XYWolff/plots/u&c_vs_T_$(N).png", f)
+save("simulations/results/xy/u_and_c_vs_Temp_$(N)_wolff.png", f)
 
-# spins = rand(Float64, (N, N))
-# T = 2.0
-
-# for i=1:6000
-#     xy_wolff_step!(spins, N, T)
-#     if i%500 == 0
-#         p = plot_spins(spins, N)
-#         display(p)
-#     end
-# end
 println("Program Finished!")
 println("===========================\n")

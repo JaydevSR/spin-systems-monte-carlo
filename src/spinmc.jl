@@ -22,13 +22,13 @@ function simulate_xy_wolff(N::Int64, T::Float64, esteps::Int64, nsteps::Int64; f
     end
 
     for i = 1:esteps
-        xy_wolff_step!(spins, N, T)
+        xywolff_step!(spins, N, T)
     end
 
     E_arr = zeros(Float64, nsteps)
     for i = 1:nsteps
-        xy_wolff_step!(spins, N, T)
-        E_arr[i] = total_energy(spins, N)
+        xywolff_step!(spins, N, T)
+        E_arr[i] = xy_total_energy(spins, N)
     end
 
     return E_arr

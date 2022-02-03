@@ -44,7 +44,7 @@ function xy_total_energy(spins::Matrix, N::Int64)
             running_sum += cos2pi(s_k - spins[nn])
         end
     end
-    return running_sum / 2  # divide by 2 because each bond counted twice
+    return - running_sum / 2  # divide by 2 because each bond counted twice
 end
 
 """
