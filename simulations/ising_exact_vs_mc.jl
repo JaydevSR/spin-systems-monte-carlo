@@ -1,13 +1,10 @@
-include("IsingExactSol/isingexact.jl")
-include("IsingMetropolis/isingmetro.jl")
-
-using CairoMakie
+include("../src/spinmc.jl")
 
 #=
 Perform simulation
 =#
 
-N = 30 # [10, 20, 30]  # Lattice size
+N = 10 # [10, 20, 30]  # Lattice size
 
 println("================================\n")
 println("    Lattice Size: $(N) x $(N)")
@@ -31,19 +28,19 @@ for i = 1:length(Temps)
     T = Temps[i]
     println("Calculating for T = $(T) ...")
 
-    E = total_energy(spins)
-    M = total_magnetization(spins)
+    E = ising_total_energy(spins)
+    M = ising_total_magnetization(spins)
 
     # Let the system reach equilibrium
     for step = 1:eqsteps
-        E, M = ising_metropolis_sweep!(spins, T, E, M)
+        E, M = isingmetro_step!(spins, T, E, M)
     end
 
     u_arr = zeros(Float64, nsteps)
 
     # Iterate for calculating averages
     for step = 1:nsteps
-        E, M = ising_metropolis_sweep!(spins, T, E, M)
+        E, M = isingmetro_step!(spins, T, E, M)
         u_arr[step] = E / N^2
     end
 
@@ -57,8 +54,8 @@ for i = 1:length(Temps)
 end
 
 Temps2 = [i for i = 1.0:0.01:3.6]
-u_T_exact = exact_internal_energy.(Temps2)
-c_T_exact = exact_specific_heat.(Temps2)
+u_T_exact = ising_exact_u.(Temps2)
+c_T_exact = ising_exact_c.(Temps2)
 
 
 #=
@@ -69,12 +66,12 @@ f = Figure()
 
 ax1 = Axis(
     f[1, 1], xlabel = "temperature, T", ylabel = "internal energy, u",
-    title = "XY Model for Lattice Size $(N)"
+    title = "Ising Model for Lattice Size $(N)"
     )
 
 ax2 = Axis(
     f[1, 2], xlabel = "temperature, T", ylabel = "specific heat, c",
-    title = "XY Model for Lattice Size $(N)"
+    title = "Ising Model for Lattice Size $(N)"
     )
 
 # internal energy per site
@@ -85,7 +82,7 @@ errorbars!(
     ax1, Temps, u_T, err_u_T,
     whiskerwidth = 10
 )
-CairoMakie.scatter!(
+scatter!(
     ax1, Temps, u_T,
     markersize = 10, label = "MC results"
 )
@@ -100,7 +97,7 @@ errorbars!(
     ax2, Temps, c_T, err_c_T,
     whiskerwidth = 10)
     
-CairoMakie.scatter!(
+scatter!(
     ax2, Temps, c_T,
     markersize = 10, label = "MC results"
     )
@@ -108,7 +105,7 @@ CairoMakie.scatter!(
 axislegend(ax2, orientation = :horizontal, position = :lt)
 
 println("Saving Plots ...")
-save("Ising/exact_vs_mc_plots/u_and_c_vs_Temp_$(N).png", f)
+save("simulations/results/ising/u_and_c_vs_Temp_$(N)_exact_vs_mc.png", f)
 
 println("Program Finished!")
 println("===========================\n")

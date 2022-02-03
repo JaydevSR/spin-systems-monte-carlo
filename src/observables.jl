@@ -1,5 +1,5 @@
 """
-    total_magnetization(spins)
+    ising_total_magnetization(spins)
 
 Calculate the total magnetization of square spin lattice.
 """
@@ -9,7 +9,7 @@ end
 
 
 """
-    total_energy(spins)
+    ising_total_energy(spins)
 
 Calculate the total energy of the square spin lattice (with zero field and J=1).
 """

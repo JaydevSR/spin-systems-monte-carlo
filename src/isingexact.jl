@@ -11,7 +11,7 @@ const ising_Tc = 2 / log1p(sqrt(2))
 
 Calculate the exact value of internal energy per site at temperature T.
 """
-function exact_internal_energy(T::Float64)
+function ising_exact_u(T::Float64)
     β = 1/T
     k = 2tanh(2β) / cosh(2β)
     j = 2tanh(2β)^2 - 1
@@ -24,7 +24,7 @@ end
 
 Calculate the exact value of specific hear per site at temperature T.
 """
-function exact_specific_heat(T::Float64)
+function ising_exact_c(T::Float64)
     β = 1/T
     k = 2tanh(2β) / cosh(2β)
     j = 2tanh(2β)^2 - 1

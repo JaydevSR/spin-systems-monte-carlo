@@ -43,24 +43,6 @@ function get_ising_cluster!(ising_sign, ising_len, seed, T)
     return cluster
 end
 
-function decompose_XY_to_ising(XYlattice, u_flip)
-    along_u = cos2pi.(XYlattice .- u_flip)
-    normal_u = sin2pi.(XYlattice .- u_flip)
-    Ising_pll = sign.(along_u)
-    Ising_prp = sign.(normal_u)
-    len_pll = abs.(along_u)
-    len_prp = abs.(normal_u)
-    return Ising_pll, Ising_prp, len_pll, len_prp
-end
-
-function compose_ising_to_XY(ising_pll, ising_prp, len_pll, len_prp, u_flip)
-    along_u = ising_pll .* len_pll
-    normal_u = ising_prp .* len_prp
-    x = along_u .* cos2pi(u_flip) .- normal_u .* sin2pi(u_flip)
-    y = along_u .* sin2pi(u_flip) .+ normal_u .* cos2pi(u_flip)
-    XYlattice = mod1.(atan.(y, x) ./ (2pi), 1)
-    return XYlattice
-end
 
 
 """

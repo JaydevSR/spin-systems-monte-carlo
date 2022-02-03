@@ -1,13 +1,10 @@
-using Plots
-
-include("isingmetro.jl")
+include("../src/spinmc.jl")
 
 #=
 Perform simulation
 =#
 
 N = 20  # Lattice size
-
 println("================================\n")
 println("    Lattice Size: $(N) x $(N)")
 println("================================\n")
@@ -19,7 +16,7 @@ spins = ones(N, N)  # T = 0
 
 Temps = [i for i = 1.0:0.1:3.6]
 eqsteps = 2000  # Number of steps for equilibration
-nsteps = 10000  # Number of steps for measurements
+nsteps = 6000  # Number of steps for measurements
 
 u_T = zeros(Float64, length(Temps))  # Array of mean internal energy per site
 err_u_T = zeros(Float64, length(Temps))
@@ -38,29 +35,32 @@ for i = 1:length(Temps)
     T = Temps[i]
     println("Calculating for T = $(T) ...")
 
-    E = total_energy(spins)
-    M = total_magnetization(spins)
+    P_add = 1 - exp(-2 / T)
 
     # Let the system reach equilibrium
     for step = 1:eqsteps
-        E, M = ising_metropolis_sweep!(spins, T, E, M)
+        ΔM = isingwolff_step!(spins, P_add)
     end
 
     u_arr = zeros(Float64, nsteps)
     m_arr = zeros(Float64, nsteps)
 
+    u_arr[1] = ising_total_energy(spins) / N^2
+    m_arr[1] = ising_total_magnetization(spins) / N^2
+
+
     # Iterate for calculating averages
-    for step = 1:nsteps
-        E, M = ising_metropolis_sweep!(spins, T, E, M)
-        u_arr[step] = E / N^2
-        m_arr[step] = M / N^2
+    for step = 1:nsteps-1
+        ΔM = isingwolff_step!(spins, P_add)
+        u_arr[step+1] = ising_total_energy(spins) / N^2
+        m_arr[step+1] = ising_total_magnetization(spins) / N^2
     end
 
-    m_arr = abs.(m_arr)
+    m_arr = abs.(m_arr)  # take absolute magnetization
     u_T[i] = mean(u_arr)
     err_u_T[i] = blocking_err(u_arr, mean)
 
-    m_T[i] = mean(m_arr)  # As B=0
+    m_T[i] = mean(m_arr)
     err_m_T[i] = blocking_err(m_arr, mean)
 
     c_T[i] = specific_heat(u_arr, T, N)
@@ -77,44 +77,56 @@ end
 Plots
 =#
 println("Generating Plots ...")
-scatter(Temps, u_T, yerr = u = err_u_T)
-xlabel!("temperature, T")
-ylabel!("internal energy, u")
-title!("Ising Model for Lattice Size $(N)")
-savefig("Ising/IsingMetropolis/plots/u_vs_T_$(N).png")
+f = Figure()
 
-scatter(Temps, m_T, yerr = err_m_T)
-xlabel!("temperature, T")
-ylabel!("magnetization, m")
-title!("Ising Model for Lattice Size $(N)")
-savefig("Ising/IsingMetropolis/plots/m_vs_T_$(N).png")
+ax1 = Axis(
+    f[1, 1], xlabel = "temperature, T", ylabel = "internal energy, u",
+    title = "Ising $(N)x$(N): Internal energy vs temperature"
+    )
 
-scatter(Temps, c_T, yerr = err_c_T)
-xlabel!("temperature, T")
-ylabel!("specific heat, c")
-title!("Ising Model for Lattice Size $(N)")
-savefig("Ising/IsingMetropolis/plots/c_vs_T_$(N).png")
+ax2 = Axis(
+    f[1, 2], xlabel = "temperature, T", ylabel = "specific heat, c",
+    title = "Ising $(N)x$(N): Specific heat vs temperature"
+    )
 
-scatter(Temps, χ_T, yerr = err_χ_T)
-xlabel!("temperature, T")
-ylabel!("succeptibility, χ")
-title!("Ising Model for Lattice Size $(N)")
-savefig("Ising/IsingMetropolis/plots/x_vs_T_$(N).png")
+ax3 = Axis(
+    f[2, 1], xlabel = "temperature, T", ylabel = "magnetization, m",
+    title = "Ising $(N)x$(N): Magnetization vs temperature"
+    )
+
+ax4 = Axis(
+    f[2, 2], xlabel = "temperature, T", ylabel = "succeptibility, χ",
+    title = "Ising $(N)x$(N): Succeptibility vs temperature"
+    )
 
 
-# Equilibration for some T
+errorbars!(
+    ax1, Temps, u_T, err_u_T,
+    whiskerwidth = 10
+)
+scatter!(ax1, Temps, u_T)
 
-# T = 2.0
-# energies = Float64[total_energy(spins)]
-# magnetizations = Float64[total_magnetization(spins)]
 
-# for step=1:nsteps
-#     E, M = ising_metropolis_sweep!(spins, T, energies[step], magnetizations[step])
-#     append!(energies, E)
-#     append!(magnetizations, M)
-# end
+errorbars!(
+    ax2, Temps, c_T, err_c_T,
+    whiskerwidth = 10
+)
+scatter!(ax2, Temps, c_T)
 
-# p = plot(1:nsteps, energies[2:end] ./ N^2)
-# p = plot!(1:nsteps, magnetizations[2:end] ./ N^2)
+errorbars!(
+    ax3, Temps, m_T, err_m_T,
+    whiskerwidth = 10
+)
+scatter!(ax3, Temps, m_T)
+
+
+errorbars!(
+    ax4, Temps, χ_T, err_χ_T,
+    whiskerwidth = 10
+)
+scatter!(ax4, Temps, χ_T)
+
+save("simulations/results/ising/physical_qtys_vs_Temp_$(N)_wolff.png", f)
+
 println("Program Finished!")
 println("===========================\n")

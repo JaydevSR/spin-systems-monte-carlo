@@ -22,7 +22,7 @@ function xywolff_cluster_update!(spins::Matrix, seed::AbstractArray, u_flip::Flo
     while !isempty(stack)
         k = pop!(stack)
         kval = spins[k...]
-        xywolff_flip_spin2!(spins, k, u_flip)
+        xywolff_flip_spin!(spins, k, u_flip)
         @inbounds for δ ∈ ([1, 0], [N - 1, 0], [0, 1], [0, N - 1])
             nn = k + δ
             @. nn = mod1(nn, N)  # Apply periodic boundary conditions
@@ -48,15 +48,23 @@ function xywolff_flip_spin!(spins::Matrix, pos::AbstractArray, u_flip::Float64)
     return old, spins[pos...]
 end
 
-function xywolff_flip_spin2!(spins::Matrix, pos::AbstractArray, u_flip::Float64)
-    old = spins[pos...]
-    along_u = cos2pi.(old - u_flip)
-    normal_u = sin2pi.(old - u_flip)
-    along_u *= -1
-    x = along_u * cos2pi(u_flip) - normal_u * sin2pi(u_flip)
-    y = along_u * sin2pi(u_flip) + normal_u * cos2pi(u_flip)
-    spins[pos...] = mod1(atan(y, x) / (2pi), 1)
-    return old, spins[pos...]
+function decompose_XY_to_ising(XYlattice, u_flip)
+    along_u = cos2pi.(XYlattice .- u_flip)
+    normal_u = sin2pi.(XYlattice .- u_flip)
+    Ising_pll = sign.(along_u)
+    Ising_prp = sign.(normal_u)
+    len_pll = abs.(along_u)
+    len_prp = abs.(normal_u)
+    return Ising_pll, Ising_prp, len_pll, len_prp
+end
+
+function compose_ising_to_XY(ising_pll, ising_prp, len_pll, len_prp, u_flip)
+    along_u = ising_pll .* len_pll
+    normal_u = ising_prp .* len_prp
+    x = along_u .* cos2pi(u_flip) .- normal_u .* sin2pi(u_flip)
+    y = along_u .* sin2pi(u_flip) .+ normal_u .* cos2pi(u_flip)
+    XYlattice = mod1.(atan.(y, x) ./ (2pi), 1)
+    return XYlattice
 end
 
 """

@@ -9,10 +9,16 @@ println("================================\n")
 println("    Lattice Size: $(N) x $(N)")
 println("================================\n")
 
+# T > Tc
+# T = 1.5
+# esteps = 4000
+# nsteps = 40000
+
+# T < Tc
+T = 0.4
 esteps = 1000  # Number of steps for equilibration
 nsteps = 10000  # Number of steps for measurements
 
-T = 0.4
 println("Calculating spin-spin correlation function for T = $(T) ...")
 ss_corrs = zeros(Float64, N)
 nsamples = 0
@@ -49,20 +55,22 @@ ax1 = Axis(f[1, 1], xlabel = "r = |i-j|", ylabel = "<s_i * s_j>",
     title = "Spin-spin correlation function (Lattice Size $(N), T=$(T))"
 )
 
-ax2 = Axis(f[2, 1], xlabel = "r = |i-j|", ylabel = "ln(<s_i * s_j>)",
-    yscale=log, yminorticksvisible = true, yminorgridvisible = true,
-    title = "Spin-spin correlation function (log scale)"
+ax2 = Axis(f[2, 1], ylabel = "ln(<s_i * s_j>)", yscale=log, 
+    # xlabel = "r = |i-j|",  # For exponential decay
+    xlabel = "ln(r) = ln(|i-j|)", xscale=log,  # For power law decay
+    yminorticksvisible = true, yminorgridvisible = true,
+    # title = "xscale=linear, yscale=logscale"  # For exponential decay
+    title = "xscale=logscale, yscale=logscale"  # For power law decay
 )
 
-lines!(ax1, 0:N÷2-1, ss_corrs[1:N÷2])
 scatter!(
         ax1, 0:N÷2-1, ss_corrs[1:N÷2],
-        markersize = 7
+        markersize = 7,
 )
 
-lines!(ax2, 0:N÷2-1, ss_corrs[1:N÷2])
+lines!(ax2, 1:N÷2-1, ss_corrs[2:N÷2])
 scatter!(
-    ax2, 0:N÷2-1, ss_corrs[1:N÷2],
+    ax2, 1:N÷2-1, ss_corrs[2:N÷2],
     markersize = 7
 )
 
